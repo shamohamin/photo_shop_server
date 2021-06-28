@@ -5,7 +5,7 @@ from ..database import query_db
 from .make_responses import make_400_reponse
 import datetime
 from .. import app
-from .authentication import token_required
+from .authentication import token_required, referesh_token
 
 users = Blueprint('users', __name__)
 
@@ -73,6 +73,12 @@ def login():
     
     return make_response(jsonify({"message": "email or password was not correct!."}), 403)
 
+@users.route("/user", methods=['GET'])
+@token_required
+def get_user(user):
+    print(user)
+    return jsonify({'user': user}), 200
+
 @users.route('/user', methods=['POST'])
 def create_user():
     data = request.get_json()
@@ -94,3 +100,9 @@ def create_user():
             app.config['SECRET_KEY'])
     
     return make_response(jsonify({'token': token}), 200)
+
+
+@users.route('/referesh_token', methods=['POST'])
+@referesh_token
+def token_referesh(token):
+    return jsonify({'token': token}), 200

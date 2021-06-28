@@ -4,6 +4,8 @@ import base64
 from PIL import Image
 from io import BytesIO
 import numpy as np
+import cv2
+
 
 def filter_credential_cheker(f):
     @wraps(f)
@@ -28,6 +30,7 @@ def filter_photo_checker_and_defaultier(f):
         try:
             decoded_image = decoding_image(encoded_image)
             attribute = which_filter_is(request.get_json().get('filter_type', None))
+            attribute['filter_type'] = request.get_json().get('filter_type', None)
         except Exception as ex:
             return make_response(jsonify({'message': ex.args[0]}, 500))
         
@@ -43,13 +46,47 @@ def decoding_image(encode_image):
     return img_m
 
 def which_filter_is(filter_type):
-    attributes = {'kernel_size': request.get_json().get('kernel_size', None)}    
-    if filter_type == "gussian":
+    attributes = {'kernel_size': request.get_json().get('kernel_size', 3)}    
+    if filter_type == "gussian_filter":
         attributes['sigma'] = request.get_json().get('sigma', None)
-    elif filter_type == "bilateral":
-        attributes['sigma'] = request.get_json().get('sigma', None)
+    elif filter_type == "bilateral_filter":
+        attributes['sigma_space'] = request.get_json().get('sigma_space', None)
         attributes['sigma_color'] = request.get_json().get('sigma_color', None)
     else:
-        if filter_type != 'linear':
+        if filter_type != 'box_filter':
             raise Exception("Please choose existing filters")
     return attributes
+
+
+def apply_filters(img, attributes):
+    filter_type = attributes['filter_type']
+    kernel_size = attributes['kernel_size']
+    photo = None
+    if filter_type == "box_filter":
+        photo = apply_linear_filter(img, kernel_size)
+    elif filter_type == "gussian_filter":
+        photo = apply_guassian_filter(img, kernel_size, attributes.get('sigma', None))
+    elif filter_type == "bilateral_filter":
+        photo = apply_bilateral_filter(img, kernel_size,
+                                      attributes.get('sigma_color', None),
+                                      attributes.get('sigma_space', None))
+    if photo == None:
+        raise Exception("somtehing went wrong!")
+    return photo
+
+def apply_linear_filter(img, kernel_size):
+    filtered_img = cv2.boxFilter(img, -1, (kernel_size, kernel_size))
+    return filtered_img
+
+def apply_guassian_filter(img, kernel_size, sigma=0):
+    filtered_img = cv2.GaussianBlur(img,
+                                    (kernel_size, kernel_size),
+                                    sigma if sigma is not None else 0)
+    return filtered_img
+    
+
+def apply_bilateral_filter(img, kernel_size, sigmaColor=0.3, sigmaSpace=25):
+    sigmaColor = sigmaColor if sigmaColor is not None else 0.3
+    sigmaSpace = sigmaSpace if sigmaSpace is not None else 25
+    filtered_img = cv2.bilateralFilter(img, kernel_size, sigmaColor, sigmaSpace)
+    return filtered_img
