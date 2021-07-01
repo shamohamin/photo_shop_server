@@ -29,8 +29,10 @@ def filter_photo_checker_and_defaultier(f):
         encoded_image = request.get_json().get('image', None)
         try:
             decoded_image = decoding_image(encoded_image)
+            decoded_image = decoded_image[:, :, -1::-1]
             attribute = which_filter_is(request.get_json().get('filter_type', None))
             attribute['filter_type'] = request.get_json().get('filter_type', None)
+            print(attribute)
         except Exception as ex:
             return make_response(jsonify({'message': ex.args[0]}, 500))
         
@@ -42,7 +44,6 @@ def decoding_image(encode_image):
     img = Image.open(BytesIO(image_decoded))
     img.show()
     img_m = np.asarray(img.convert("RGB"))
-    
     return img_m
 
 def which_filter_is(filter_type):
@@ -70,12 +71,13 @@ def apply_filters(img, attributes):
         photo = apply_bilateral_filter(img, kernel_size,
                                       attributes.get('sigma_color', None),
                                       attributes.get('sigma_space', None))
-    if photo == None:
+    if not isinstance(photo, np.ndarray):
         raise Exception("somtehing went wrong!")
     return photo
 
 def apply_linear_filter(img, kernel_size):
     filtered_img = cv2.boxFilter(img, -1, (kernel_size, kernel_size))
+    
     return filtered_img
 
 def apply_guassian_filter(img, kernel_size, sigma=0):
