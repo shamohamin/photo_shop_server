@@ -19,10 +19,8 @@ create table users (
 
 create table picture (
     id integer primary key,
-    created_date timestamp,
-    img bytea,
+    img text,
     name varchar(255),
-    updated_date timestamp,
     user_id int8 not null references users(user_id)
 );
 

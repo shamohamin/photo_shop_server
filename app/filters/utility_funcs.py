@@ -42,7 +42,7 @@ def filter_photo_checker_and_defaultier(f):
 def decoding_image(encode_image):
     image_decoded = base64.b64decode(encode_image)
     img = Image.open(BytesIO(image_decoded))
-    img.show()
+    # img.show()
     img_m = np.asarray(img.convert("RGB"))
     return img_m
 

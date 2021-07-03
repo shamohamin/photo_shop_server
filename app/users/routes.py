@@ -6,6 +6,7 @@ from .make_responses import make_400_reponse
 import datetime
 from .. import app
 from .authentication import token_required, referesh_token
+import random
 
 users = Blueprint('users', __name__)
 
@@ -106,3 +107,34 @@ def create_user():
 @referesh_token
 def token_referesh(token):
     return jsonify({'token': token}), 200
+
+@users.route('/user/photo', methods=['POST'])
+@token_required
+def save_photo(user):
+    # print(user)
+    user_id = user["id"]
+    img = request.get_json().get("image", None)
+    if img is None:
+        return jsonify({"message": "image not provided"}), 400
+    
+    name = request.get_json().get("name", None)
+    if name is None:
+        name = "image_" + str(random.randint(0, 10000))
+    
+    q = query_db("INSERT INTO picture(img, name, user_id) VALUES (?, ?, ?)",
+                 args=(img, name, user_id), com=True)
+    print(q)
+    
+    return jsonify({"message": "picture successfully saved!."}), 200
+
+@users.route('/user/photo', methods=['GET'])
+@token_required
+def get_photos(user):
+    out = query_db("SELECT img, name FROM picture WHERE user_id = ?", args=(user["id"],))
+    output = []
+    for o in out:
+        output.append({
+            "image": o[0],
+            "name": o[-1]
+        })
+    return jsonify({"result": output}), 200

@@ -45,7 +45,7 @@ def referesh_token(func):
         try:
             # print(token)
             data = jwt.decode(token, app.config['SECRET_KEY'], algorithms="HS256")
-            print(data)
+            # print(data)
             if data.get("email", None) is not None:
                 user = query_db("SELECT * FROM users where email = ?", (data['email'],))
                 if len(user) == 0:
